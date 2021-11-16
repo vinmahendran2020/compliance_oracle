@@ -1,0 +1,125 @@
+import com.whitney.complianceOracle.model.*
+
+global ValidationResult validationResult;
+global java.util.List errorCodes;
+global RequestObj request;
+
+
+dialect "java"
+
+rule "Rule 1 - Investor Citizenship"
+        when    
+                RequestObj(ruleOne.getCountries() != null) and 
+                RequestObj(getRuleOne().getCountries() not contains getInvestor().getInvestorProfile.getCitizenship())   
+        then   
+                errorCodes.add(1);
+        end
+
+rule "Rule 2 - Investor Residency"
+        when    
+                RequestObj(ruleTwo.getCountries() != null) and 
+                RequestObj(getRuleTwo().getCountries() not contains getInvestor().getInvestorProfile.getCountryOfResidence())   
+        then   
+                errorCodes.add(2);
+        end
+
+rule "Rule 3 - Investor State of Residence"
+        when 
+                RequestObj(ruleThree.getStates() != null) and 
+                RequestObj(getRuleThree().getStates() not contains getInvestor().getInvestorProfile.getResidenceState())    
+        then
+                errorCodes.add(3);
+        end
+
+rule "Rule 4 - Investor Accreditation"
+        when    
+                RequestObj(ruleFour.getAccreditation() != null) and 
+                RequestObj(getRuleFour().getAccreditation() != getInvestor().getInvestorProfile().getAccreditationStatus())   
+        then   
+                errorCodes.add(4);
+        end
+
+rule "Rule 5 - Investor Accreditation Source"
+        when    
+                RequestObj(ruleFive.getAccreditationSources() != null) and 
+                RequestObj(getRuleFive().getAccreditationSources() not contains getInvestor().getInvestorProfile().getAccreditationSource()) and
+                RequestObj(getInvestor().getInvestorProfile().getAccreditationSource() != getInvestor().getInvestorProfile().getSubmitter())
+        then   
+                errorCodes.add(5);
+        end
+
+rule "Rule 6: Check Investor KYC Source against Submitter"
+        when 
+                RequestObj(ruleSix.getKycSources() != null) and 
+                RequestObj(getRuleSix().getKycSources() not contains getInvestor().getInvestorProfile.getSubmitter())
+ 	then
+                errorCodes.add(6);
+ 	end
+
+rule "Rule 7a - Normal Investor Lock Up Period"
+       when    
+                RequestObj(ruleSeven.getRuleSeven() != null) and 
+                RequestObj(getInvestor().getInvestorProfile().getSpecialInvestor() != true) and
+                RequestObj(getSecurity().getPastLockUp() == false)
+        then   
+                errorCodes.add(7);
+        end
+
+rule "Rule 7b - Special Investor Lock Up Period"
+        when    
+                RequestObj(ruleSeven.getRuleSeven() != null) and 
+                RequestObj(getInvestor().getInvestorProfile().getSpecialInvestor() == true) and
+                RequestObj(getSecurity().getPastSpecialLockUp() == false) 
+        then   
+                errorCodes.add(7);
+        end
+
+ 	
+rule "Rule 8 - Transaction Keeps Issue Under Investor Limit"
+        when    
+                RequestObj(ruleEight.getInvestorLimit() != null) and 
+                RequestObj(ruleEight.getInvestorLimit() < getSecurity().getNumberOfOwners())   
+        then   
+                errorCodes.add(8);
+        end
+
+rule "Rule 9 - Transaction keeps Investor within Ownership Limits - investors owns < 5%/x% total"
+        when    
+                RequestObj(ruleNine.getOwnershipLimitPercentage() != null) and 
+                RequestObj(ruleNine.getOwnershipLimitPercentage < getInvestor().getPostTransactionPercent())
+        then
+                errorCodes.add(9);
+        end
+
+rule "Rule 10 - Transaction within Buy/Sell Period"
+        when    
+                RequestObj(investor.getAvailableTokensForSale() < getInvestor().getTransactionAmount())
+        then   
+                errorCodes.add(10);
+        end
+
+rule "Rule 11 - Special Investor and Authorized to Trade"
+        when    
+                RequestObj(ruleEleven.getRuleEleven() != null) and
+                ( RequestObj(getInvestor().getInvestorProfile().getSpecialInvestor() == false) and
+                RequestObj(getInvestor().getInvestorProfile().getTradeAuthorized() == false) ) or 
+
+                RequestObj(ruleEleven.getRuleEleven() != null) and
+                (RequestObj(getInvestor().getInvestorProfile().getSpecialInvestor() == true) and
+                RequestObj(getInvestor().getInvestorProfile().getTradeAuthorized() == false) )or
+                
+                RequestObj(ruleEleven.getRuleEleven() != null) and
+                ( RequestObj(getInvestor().getInvestorProfile().getSpecialInvestor() == false) and
+                RequestObj(getInvestor().getInvestorProfile().getTradeAuthorized() == true) )
+        then   
+                errorCodes.add(11);
+        end
+
+rule "Rule 12 - Trading Venue Approved"
+        when    
+                RequestObj(ruleTwelve.getValidTradingVenueNames() != null) and
+                RequestObj(getRuleTwelve().getValidTradingVenueNames() not contains getTradingVenueName())
+
+        then   
+                errorCodes.add(12);
+        end
